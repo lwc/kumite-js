@@ -5,6 +5,9 @@ var Kumite;
 
 	var COOKIE_PREFIX = 'kumite__';
 
+	var requestCookies = {};
+	var endpoint;
+
 	var createCookie = function(name, value, when) {
 		
 		var expires = "";
@@ -28,62 +31,68 @@ var Kumite;
 		return null;
 	};
 
+	Kumite = {
 
-	Kumite = function(endpoint) {
-		this.endpoint = endpoint;
-		this.requestCookies = {};
-	};
+		endpoint: function(ep) {
 
-	Kumite.prototype.start = function(testKey, variant) {
+			endpoint = ep;
 
-		var requestCookies = this.requestCookies;
+		},
+		start: function(testKey, variant) {
 
-		if (requestCookies[testKey])
-			return;
-		if (readCookie(COOKIE_PREFIX+testKey))
-			return;
+			if (!endpoint)
+				throw "Missing endpoint";
 
-		var data = {
-			kumite: {
-				start: {
-					testKey: testKey,
-					variant: variant
+			if (requestCookies[testKey])
+				return;
+			if (readCookie(COOKIE_PREFIX+testKey))
+				return;
+
+			var data = {
+				kumite: {
+					start: {
+						testKey: testKey,
+						variant: variant
+					}
 				}
-			}
-		};
+			};
 
-		$.post(this.endpoint, data).success(function(response) {
-			requestCookies[testKey] = response.variant;
-		});
-	};
+			$.post(endpoint, data).success(function(response) {
+				requestCookies[testKey] = response.variant;
+			});
+		},
+		variant: function(testKey) {
 
-	Kumite.prototype.variant = function(testKey) {
+			if (!endpoint)
+				throw "Missing endpoint";
 
-		if (this.requestCookies[testKey])
-			return this.requestCookies[testKey];
+			if (requestCookies[testKey])
+				return this.requestCookies[testKey];
 
-		var cookie = $.parseJSON(readCookie(COOKIE_PREFIX+testKey));
-		if (cookie.variant)
-			return cookie.variant;
-	};
+			var cookie = $.parseJSON(readCookie(COOKIE_PREFIX+testKey));
+			if (cookie.variant)
+				return cookie.variant;
+		},
+		event: function(testKey, eventKey, metadata) {
 
-	Kumite.prototype.event = function(testKey, eventKey, metadata) {
+			if (!endpoint)
+				throw "Missing endpoint";
 
-		var cookie = $.parseJSON(readCookie(COOKIE_PREFIX+testKey));
+			var cookie = $.parseJSON(readCookie(COOKIE_PREFIX+testKey));
 
-		if (!this.requestCookies[testKey] && !cookie)
-			return;
+			if (!requestCookies[testKey] && !cookie)
+				return;
 
-		var data = {
-			kumite: {
-				event: {
-					testKey: testKey,
-					eventKey: eventKey,
-					metadata: metadata
+			var data = {
+				kumite: {
+					event: {
+						testKey: testKey,
+						eventKey: eventKey,
+						metadata: metadata
+					}
 				}
-			}
-		};
-		$.post(this.endpoint, data);
+			};
+		$.post(endpoint, data);
 	};
 
 })(jQuery);
